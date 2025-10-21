@@ -8,8 +8,8 @@ A modern Windows desktop application for managing Valorant loadouts, built with 
 - **Template System**: Create and save custom loadout templates for quick switching
 - **Agent-Specific Loadouts**: Set different loadouts for each agent automatically
 - **Skin Management**: View and manage your owned weapon skins
-- **Modern UI**: Beautiful, responsive interface with drag-and-drop functionality
-- **Auto-Detection**: Automatically detects your Valorant region and authentication
+- **Modern UI**: Beautiful, responsive interface
+- **Auto-Detection**: Automatically detects u picking agent in agent select
 
 ## 🚀 Quick Start
 
