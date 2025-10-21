@@ -106,7 +106,7 @@ Enable agent-specific loadouts to automatically switch your loadout when you sel
 
 - **Backend**: Go with Wails v2 framework
 - **Frontend**: Svelte 5 with TypeScript
-- **Styling**: SCSS with Tailwind CSS
+- **Styling**: SCSS
 - **Build Tool**: Vite
 - **Authentication**: Valorant's local API integration
 
@@ -126,20 +126,12 @@ Enable agent-specific loadouts to automatically switch your loadout when you sel
 - **Valorant Integration**: Uses Valorant's official local API
 - **Secure Authentication**: Leverages Valorant's built-in authentication system
 
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **"Valorant not detected"**: Make sure Valorant is running and you're logged in
-2. **Authentication failed**: Restart Valorant and try again
-3. **Region detection failed**: Ensure you've played at least one match recently
 
 
 ## 🙏 Acknowledgments
 
 - Built with [Wails v2](https://wails.io/)
 - Frontend powered by [Svelte 5](https://svelte.dev/)
-- Styling with [Tailwind CSS](https://tailwindcss.com/)
 - Valorant API integration
 
 ## 📞 Support
