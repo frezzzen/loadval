@@ -71,20 +71,10 @@
             agent={selectedAgent}
             initialLoadout={templateManager.getAgentLoadout(
                 selectedAgent.uuid,
-            ) || loadout}
+            ) || JSON.parse(JSON.stringify(loadout))}
             {onBack}
         />
     {:else}
-        <div class="templates-header">
-            <div class="header-content">
-                <h1 class="title">LOADVAL</h1>
-                <p class="subtitle">
-                    Manage your weapon loadout templates and agent-specific
-                    loadouts
-                </p>
-            </div>
-        </div>
-
         <div class="section">
             <div class="section-header">
                 <div class="section-title-row">
@@ -105,9 +95,9 @@
                     </div>
                 </div>
                 <p class="section-description">
-                    Click on an agent to customize <br />
-                    their loadout keep in mind that if this is enabled, custom loadouts
-                    will be overridden when you select an agent.
+                    Click on an agent to customize their loadout <br />
+                    If agent loadouts are enabled, custom loadouts will be overridden
+                    when you select an agent.
                 </p>
             </div>
             {#if valorantManager.agents.length === 0}{:else}
@@ -178,37 +168,6 @@
         flex-direction: column;
         gap: 2rem;
         padding: 1rem;
-
-        .templates-header {
-            background: linear-gradient(
-                135deg,
-                rgba(173, 64, 255, 0.08),
-                rgba(122, 40, 203, 0.04)
-            );
-            border-radius: 12px;
-            border: 1px solid rgba(173, 64, 255, 0.2);
-            padding: 2rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
-            .header-content {
-                .title {
-                    margin: 0 0 0.5rem 0;
-                    font-size: 2.5rem;
-                    font-weight: 700;
-                    color: #fff;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-                }
-
-                .subtitle {
-                    margin: 0;
-                    font-size: 1rem;
-                    color: rgba(255, 255, 255, 0.6);
-                    font-weight: 400;
-                }
-            }
-        }
 
         .template-list {
             display: grid;
@@ -373,19 +332,6 @@
                 opacity: 0.4;
                 pointer-events: none;
                 position: relative;
-
-                &::before {
-                    content: "";
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    border: 2px solid #ff4444;
-                    border-radius: 8px;
-                    pointer-events: none;
-                    z-index: 1;
-                }
             }
         }
 

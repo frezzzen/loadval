@@ -9,5 +9,31 @@
   "author": {
     "name": "frezzzen",
     "email": "frezzzen@gmail.com"
+  },
+  "info": {
+    "companyName": "frezzzen",
+    "productName": "LOADVAL",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2024 frezzzen",
+    "comments": "LOADVAL - Valorant Loadout Manager"
+  },
+  "nsis": {
+    "languages": [
+      "English"
+    ],
+    "oneClick": false,
+    "allowToChangeInstallDirectory": true,
+    "installerIcon": "build/windows/icon.ico",
+    "uninstallerIcon": "build/windows/icon.ico",
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "license": "",
+    "info": {
+      "companyName": "frezzzen",
+      "productName": "LOADVAL",
+      "productVersion": "1.0.0",
+      "copyright": "Copyright © 2024 frezzzen",
+      "comments": "LOADVAL - Valorant Loadout Manager"
+    }
   }
 }

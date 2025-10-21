@@ -138,7 +138,8 @@
 
 <div class="gun-view">
     <div class="header">
-        <button class="back-button" onclick={handleBackClick}>
+        <button class="back-button" onclick={handleBackClick}
+            >wa
             <svg
                 width="24"
                 height="24"

@@ -16,16 +16,19 @@ var assets embed.FS
 var appobj *app.App
 
 var valorantApi *ValorantAPI
+var storageApi *StorageAPI
+var updateApi *UpdateAPI
 
 func main() {
 	println("Starting LOADVAL application...")
 
 	appobj = app.NewApp()
 	valorantApi = NewValorantAPI()
+	storageApi = NewStorageAPI()
+	updateApi = NewUpdateAPI()
 
 	println("App objects created successfully")
 
-	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "LOADVAL",
 		Width:  1920,
@@ -39,6 +42,8 @@ func main() {
 		Bind: []interface{}{
 			appobj,
 			valorantApi,
+			storageApi,
+			updateApi,
 		},
 	})
 

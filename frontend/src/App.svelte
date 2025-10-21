@@ -5,6 +5,7 @@
 	import type { main } from "../wailsjs/go/models";
 	import AppContainer from "./components/AppContainer.svelte";
 	import LoaderContainer from "./components/LoaderContainer.svelte";
+	import UpdateNotification from "./components/UpdateNotification.svelte";
 
 	function QuitButton() {
 		QuitApp();
@@ -39,8 +40,12 @@
 	});
 </script>
 
-<main style="--wails-draggable:drag">
-	<drag role="button" tabindex="0">
+<main>
+	<UpdateNotification />
+
+	<drag role="button" tabindex="0" style="--wails-draggable:drag">
+		<div class="app-title">LOADVAL</div>
+		<div class="drag-spacer"></div>
 		<button onclick={MaximiseButton}>
 			<span class="material-icons">fullscreen</span>
 		</button>
@@ -69,6 +74,7 @@
 
 <style lang="scss">
 	main {
+		margin-top: 4rem;
 		position: relative;
 		transition: transform 0.1s ease-out;
 
@@ -90,7 +96,9 @@
 	drag {
 		position: fixed;
 		top: 0;
+		left: 0;
 		right: 0;
+		width: 100%;
 		z-index: 1000;
 		display: flex;
 		align-items: center;
@@ -102,8 +110,8 @@
 			rgba(255, 255, 255, 0.05)
 		);
 		backdrop-filter: blur(10px);
-		border-bottom-left-radius: 1rem;
 		border: 1px solid rgba(255, 255, 255, 0.1);
+		border-top: none;
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 		cursor: move;
 		transition: all 0.3s ease;
@@ -115,6 +123,24 @@
 				rgba(255, 255, 255, 0.08)
 			);
 			box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+		}
+
+		.app-title {
+			font-size: 1.5rem;
+			font-weight: 700;
+			color: #fff;
+			text-transform: uppercase;
+			letter-spacing: 0.1em;
+			text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+			background: linear-gradient(135deg, #ad40ff, #7a28cb);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			background-clip: text;
+			pointer-events: none;
+		}
+
+		.drag-spacer {
+			flex: 1;
 		}
 
 		button {
