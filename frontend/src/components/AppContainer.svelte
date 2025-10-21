@@ -14,58 +14,77 @@
 
     type Props = {
         loadout: main.PlayerLoadoutResponse;
-        ownedItems: main.OwnedItemsResponseEntitlement[];
+        ownedSkins: main.OwnedItemsResponseEntitlement[];
+        ownedSkinVariants: main.OwnedItemsResponseEntitlement[];
+        ownedAgents: main.OwnedItemsResponseEntitlement[];
+        ownedCards: main.OwnedItemsResponseEntitlement[];
     };
 
-    let { loadout, ownedItems }: Props = $props();
+    let {
+        loadout,
+        ownedSkins,
+        ownedSkinVariants,
+        ownedAgents,
+        ownedCards,
+    }: Props = $props();
 
     const templateManager = useTemplateManager();
     const loadoutManager = useLoadoutManager();
 
     onMount(async () => {
         loadoutManager.setLoadout(loadout);
-        loadoutManager.setOwnedItems(ownedItems);
+        loadoutManager.setOwnedSkins(ownedSkins);
+        loadoutManager.setOwnedSkinVariants(ownedSkinVariants);
+        loadoutManager.setOwnedAgents(ownedAgents);
+        loadoutManager.setOwnedCards(ownedCards);
     });
 
     async function run() {
         let interval = setInterval(async () => {
-            if (!templateManager.isAgentLoadoutsEnabled) return;
-            const preGamePlayer = await GetPreGamePlayer();
-            if (preGamePlayer) {
-                const me = preGamePlayer.Subject;
-                let secondInterval = setInterval(async () => {
-                    clearInterval(interval);
-                    const preGameMatch = await GetPreGameMatch();
-                    if (preGameMatch) {
-                        const myTeam = preGameMatch.Teams.find((team) =>
-                            team.Players.some(
+            try {
+                if (!templateManager.isAgentLoadoutsEnabled) return;
+                const preGamePlayer = await GetPreGamePlayer();
+                if (preGamePlayer) {
+                    const me = preGamePlayer.Subject;
+                    let secondInterval = setInterval(async () => {
+                        clearInterval(interval);
+                        const preGameMatch = await GetPreGameMatch();
+                        if (preGameMatch) {
+                            const myTeam = preGameMatch.Teams.find((team) =>
+                                team.Players.some(
+                                    (player) => player.Subject === me,
+                                ),
+                            );
+                            const mePlayer = myTeam?.Players.find(
                                 (player) => player.Subject === me,
-                            ),
-                        );
-                        const mePlayer = myTeam?.Players.find(
-                            (player) => player.Subject === me,
-                        );
-                        if (mePlayer) {
-                            if (mePlayer.CharacterSelectionState === "locked") {
-                                const agentLoadout =
-                                    templateManager.getAgentLoadout(
-                                        mePlayer.CharacterID,
-                                    );
-                                if (agentLoadout) {
-                                    await templateManager.saveLoadout(
-                                        agentLoadout,
-                                    );
-                                    clearInterval(secondInterval);
-                                    setTimeout(() => {
-                                        run();
-                                    }, 5000);
+                            );
+                            if (mePlayer) {
+                                if (
+                                    mePlayer.CharacterSelectionState ===
+                                    "locked"
+                                ) {
+                                    const agentLoadout =
+                                        templateManager.getAgentLoadout(
+                                            mePlayer.CharacterID,
+                                        );
+                                    if (agentLoadout) {
+                                        await templateManager.saveLoadout(
+                                            agentLoadout,
+                                        );
+                                        clearInterval(secondInterval);
+                                        setTimeout(() => {
+                                            run();
+                                        }, 5000);
+                                    }
                                 }
                             }
                         }
-                    }
-                }, 5000);
+                    }, 3000);
+                }
+            } catch {
+                //
             }
-        }, 30000);
+        }, 5000);
     }
 
     run();

@@ -178,7 +178,10 @@ export namespace main {
 		}
 	}
 	export class MainData {
-	    OwnedItems: OwnedItemsResponse[];
+	    OwnedSkins: OwnedItemsResponse[];
+	    OwnedSkinVariants: OwnedItemsResponse[];
+	    OwnedAgents: OwnedItemsResponse[];
+	    OwnedCards: OwnedItemsResponse[];
 	    PlayerLoadout?: PlayerLoadoutResponse;
 	
 	    static createFrom(source: any = {}) {
@@ -187,7 +190,10 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.OwnedItems = this.convertValues(source["OwnedItems"], OwnedItemsResponse);
+	        this.OwnedSkins = this.convertValues(source["OwnedSkins"], OwnedItemsResponse);
+	        this.OwnedSkinVariants = this.convertValues(source["OwnedSkinVariants"], OwnedItemsResponse);
+	        this.OwnedAgents = this.convertValues(source["OwnedAgents"], OwnedItemsResponse);
+	        this.OwnedCards = this.convertValues(source["OwnedCards"], OwnedItemsResponse);
 	        this.PlayerLoadout = this.convertValues(source["PlayerLoadout"], PlayerLoadoutResponse);
 	    }
 	

@@ -19,13 +19,22 @@
 	}
 
 	let loadout = $state<main.PlayerLoadoutResponse | null>(null);
-	let ownedItems = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+	let ownedSkins = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+	let ownedSkinVariants = $state<main.OwnedItemsResponseEntitlement[] | null>(
+		null,
+	);
+	let ownedAgents = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+	let ownedCards = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
 
 	onMount(() => {
 		(async () => {
 			const mainData = await GetMainData();
 			loadout = mainData.PlayerLoadout || null;
-			ownedItems = mainData.OwnedItems[0].Entitlements || null;
+			ownedSkins = mainData.OwnedSkins[0].Entitlements || [];
+			ownedSkinVariants =
+				mainData.OwnedSkinVariants[0].Entitlements || [];
+			ownedAgents = mainData.OwnedAgents[0].Entitlements || [];
+			ownedCards = mainData.OwnedCards[0].Entitlements || [];
 		})();
 	});
 </script>
@@ -43,8 +52,14 @@
 		</button>
 	</drag>
 
-	{#if loadout && ownedItems}
-		<AppContainer {loadout} {ownedItems} />
+	{#if loadout && ownedSkins && ownedSkinVariants && ownedAgents && ownedCards}
+		<AppContainer
+			{loadout}
+			{ownedSkins}
+			{ownedSkinVariants}
+			{ownedAgents}
+			{ownedCards}
+		/>
 	{:else}
 		<div class="loader-container">
 			<LoaderContainer />

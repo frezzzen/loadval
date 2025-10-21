@@ -1,7 +1,11 @@
 <script lang="ts">
     import { useLoadoutManager } from "../../managers/loadout-manager.svelte";
-    import type { CustomGun, Skin } from "../../types/guns.types";
-    import CoreSwiper from "../core/core-swiper.svelte";
+    import type {
+        Chroma,
+        CustomGun,
+        Level,
+        Skin,
+    } from "../../types/guns.types";
 
     type Props = {
         onSelect?: (skin: string, chroma?: string, level?: string) => void;
@@ -41,14 +45,14 @@
 
     const ownedSkins = $derived.by((): Skin[] => {
         return customGun.weapon.skins.filter((skin) => {
-            const isInSkins = loadoutManager.ownedItems?.some(
+            const isInSkins = loadoutManager.ownedSkins?.some(
                 (ownedItem) => ownedItem.ItemID === skin.uuid,
             );
             if (isInSkins) {
                 return true;
             }
             const levels = skin.levels.filter((level) => {
-                const isInLevels = loadoutManager.ownedItems?.some(
+                const isInLevels = loadoutManager.ownedSkins?.some(
                     (ownedItem) => ownedItem.ItemID === level.uuid,
                 );
                 return isInLevels;
@@ -57,7 +61,33 @@
         });
     });
 
-    $inspect(ownedSkins);
+    const currentSkinFilteredChromas = $derived.by(() => {
+        return filterChroma(currentSkin.chromas);
+    });
+    const currentSkinFilteredLevels = $derived.by(() => {
+        return filterLevel(currentSkin.levels);
+    });
+
+    function filterChroma(chroma: Chroma[]): Chroma[] {
+        const filteredChromas = chroma.filter(
+            (c) =>
+                loadoutManager.ownedSkinVariants.some(
+                    (v) => v.ItemID === c.uuid,
+                ) || loadoutManager.ownedSkins.some((v) => v.ItemID === c.uuid),
+        );
+
+        if (filteredChromas.length > 0) {
+            filteredChromas.unshift(chroma[0]);
+        }
+
+        return filteredChromas;
+    }
+
+    function filterLevel(level: Level[]): Level[] {
+        return level.filter((l) =>
+            loadoutManager.ownedSkins.find((v) => v.ItemID === l.uuid),
+        );
+    }
 
     function handleBackClick() {
         if (onBack) {
@@ -73,8 +103,11 @@
             if (skin.chromas && skin.chromas.length > 0) {
                 selectedChroma = skin.chromas[0].uuid;
             }
-            if (skin.levels && skin.levels.length > 0) {
-                selectedLevel = skin.levels[skin.levels.length - 1].uuid;
+
+            const filteredLevels = filterLevel(skin.levels);
+
+            if (filteredLevels.length > 0) {
+                selectedLevel = filteredLevels[filteredLevels.length - 1].uuid;
             }
         }
         if (onSelect) {
@@ -101,8 +134,6 @@
         selectedChroma = customGun.loadoutWeapon.ChromaID;
         selectedLevel = customGun.loadoutWeapon.SkinLevelID;
     });
-
-    $inspect(ownedSkins);
 </script>
 
 <div class="gun-view">
@@ -133,10 +164,11 @@
         <div class="skin-info">
             <h3>{currentSkin?.displayName || customGun.skin.displayName}</h3>
         </div>
-        {#if currentSkin && currentSkin.chromas && currentSkin.chromas.length > 1}
+
+        {#if currentSkinFilteredChromas && currentSkinFilteredChromas.length > 0}
             <div class="customization-section chromas">
                 <div class="chromas">
-                    {#each currentSkin.chromas as chroma (chroma.uuid)}
+                    {#each currentSkinFilteredChromas as chroma (chroma.uuid)}
                         <div
                             class="chroma-item"
                             class:selected={chroma.uuid === selectedChroma}
@@ -191,10 +223,10 @@
                 </div>
             </div>
         {/if}
-        {#if currentSkin && currentSkin.levels && currentSkin.levels.length > 1}
+        {#if currentSkinFilteredLevels && currentSkinFilteredLevels.length > 1}
             <div class="customization-section levels">
                 <div class="levels">
-                    {#each currentSkin.levels as level (level.uuid)}
+                    {#each currentSkinFilteredLevels as level (level.uuid)}
                         <div
                             class="level-item"
                             class:selected={level.uuid === selectedLevel}
@@ -243,44 +275,42 @@
     <div class="customization-section">
         <h3 class="section-title">Skins</h3>
         <div class="other-guns">
-            <CoreSwiper options={{ slidesPerView: 8, spaceBetween: 10 }}>
-                {#each ownedSkins as skin (skin.uuid)}
-                    <div
-                        class="other-gun swiper-slide"
-                        class:selected={skin.uuid === selectedSkin}
-                        role="button"
-                        tabindex="0"
-                        onclick={() => handleSkinSelect(skin.uuid)}
-                        onkeydown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                                handleSkinSelect(skin.uuid);
-                            }
-                        }}
-                    >
-                        <img src={skin.displayIcon} alt={skin.displayName} />
-                        <div class="gun-name">{skin.displayName}</div>
-                        {#if skin.uuid === selectedSkin}
-                            <div class="selected-badge">
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        d="M20 6L9 17L4 12"
-                                        stroke="currentColor"
-                                        stroke-width="3"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                    />
-                                </svg>
-                            </div>
-                        {/if}
-                    </div>
-                {/each}
-            </CoreSwiper>
+            {#each ownedSkins as skin (skin.uuid)}
+                <div
+                    class="other-gun swiper-slide"
+                    class:selected={skin.uuid === selectedSkin}
+                    role="button"
+                    tabindex="0"
+                    onclick={() => handleSkinSelect(skin.uuid)}
+                    onkeydown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            handleSkinSelect(skin.uuid);
+                        }
+                    }}
+                >
+                    <img src={skin.displayIcon} alt={skin.displayName} />
+                    <div class="gun-name">{skin.displayName}</div>
+                    {#if skin.uuid === selectedSkin}
+                        <div class="selected-badge">
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M20 6L9 17L4 12"
+                                    stroke="currentColor"
+                                    stroke-width="3"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        </div>
+                    {/if}
+                </div>
+            {/each}
         </div>
     </div>
 </div>
@@ -439,7 +469,15 @@
         }
 
         .other-guns {
-            padding: 0.5rem;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+            overflow: hidden;
+            overflow-y: auto;
+            max-height: 30rem;
+
+            scrollbar-width: thin;
+            scrollbar-color: #3c3c3c #1a1a1a;
         }
 
         .other-gun {

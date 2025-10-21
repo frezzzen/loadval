@@ -2,7 +2,10 @@ import type { main } from "../../wailsjs/go/models";
 
 export class LoadoutManager {
     loadout = $state<main.PlayerLoadoutResponse | null>(null);
-    ownedItems = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+    ownedSkins = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+    ownedSkinVariants = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+    ownedAgents = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+    ownedCards = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
 
 
 
@@ -13,8 +16,17 @@ export class LoadoutManager {
     }
 
 
-    getOwnedItems() {
-        return this.ownedItems;
+    getOwnedSkins() {
+        return this.ownedSkins;
+    }
+    getOwnedSkinVariants() {
+        return this.ownedSkinVariants;
+    }
+    getOwnedAgents() {
+        return this.ownedAgents;
+    }
+    getOwnedCards() {
+        return this.ownedCards;
     }
 
 
@@ -22,8 +34,17 @@ export class LoadoutManager {
         this.loadout = loadout;
     }
 
-    setOwnedItems(ownedItems: main.OwnedItemsResponseEntitlement[]) {
-        this.ownedItems = ownedItems;
+    setOwnedSkins(ownedSkins: main.OwnedItemsResponseEntitlement[]) {
+        this.ownedSkins = ownedSkins;
+    }
+    setOwnedSkinVariants(ownedSkinVariants: main.OwnedItemsResponseEntitlement[]) {
+        this.ownedSkinVariants = ownedSkinVariants;
+    }
+    setOwnedAgents(ownedAgents: main.OwnedItemsResponseEntitlement[]) {
+        this.ownedAgents = ownedAgents;
+    }
+    setOwnedCards(ownedCards: main.OwnedItemsResponseEntitlement[]) {
+        this.ownedCards = ownedCards;
     }
 }
 

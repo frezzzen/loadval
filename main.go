@@ -10,6 +10,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
+//go:embed all:frontend/dist
 var assets embed.FS
 
 var appobj *app.App
@@ -17,8 +18,12 @@ var appobj *app.App
 var valorantApi *ValorantAPI
 
 func main() {
+	println("Starting LOADVAL application...")
+
 	appobj = app.NewApp()
 	valorantApi = NewValorantAPI()
+
+	println("App objects created successfully")
 
 	// Create application with options
 	err := wails.Run(&options.App{
@@ -39,6 +44,8 @@ func main() {
 
 	if err != nil {
 		println("Error:", err.Error())
+	} else {
+		println("Application started successfully")
 	}
 }
 

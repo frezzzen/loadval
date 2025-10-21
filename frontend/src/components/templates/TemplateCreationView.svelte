@@ -18,7 +18,7 @@
 
     let template = $state<Template>(
         editingTemplate
-            ? { ...editingTemplate }
+            ? JSON.parse(JSON.stringify(editingTemplate))
             : {
                   id: crypto.randomUUID(),
                   name: "",

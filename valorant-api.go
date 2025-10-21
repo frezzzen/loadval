@@ -48,8 +48,11 @@ type ValorantAPI struct {
 }
 
 type MainData struct {
-	OwnedItems    []OwnedItemsResponse
-	PlayerLoadout *PlayerLoadoutResponse
+	OwnedSkins        []OwnedItemsResponse
+	OwnedSkinVariants []OwnedItemsResponse
+	OwnedAgents       []OwnedItemsResponse
+	OwnedCards        []OwnedItemsResponse
+	PlayerLoadout     *PlayerLoadoutResponse
 }
 
 func NewValorantAPI() *ValorantAPI {
@@ -127,7 +130,22 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 	v.Token = entitlementsToken.Token
 	v.PlayerUUID = entitlementsToken.Subject
 
-	ownedItems, err := v.GetOwnedItems(ItemTypeID_Skins)
+	ownedSkins, err := v.GetOwnedItems(ItemTypeID_Skins)
+	if err != nil {
+		return nil, fmt.Errorf("error getting owned items: %w", err)
+	}
+
+	ownedSkinVariants, err := v.GetOwnedItems(ItemTypeID_SkinVariants)
+	if err != nil {
+		return nil, fmt.Errorf("error getting owned items: %w", err)
+	}
+
+	ownedAgents, err := v.GetOwnedItems(ItemTypeID_Agents)
+	if err != nil {
+		return nil, fmt.Errorf("error getting owned items: %w", err)
+	}
+
+	ownedCards, err := v.GetOwnedItems(ItemTypeID_Cards)
 	if err != nil {
 		return nil, fmt.Errorf("error getting owned items: %w", err)
 	}
@@ -138,8 +156,11 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 	}
 
 	return &MainData{
-		OwnedItems:    []OwnedItemsResponse{*ownedItems},
-		PlayerLoadout: playerLoadout,
+		OwnedSkins:        []OwnedItemsResponse{*ownedSkins},
+		OwnedSkinVariants: []OwnedItemsResponse{*ownedSkinVariants},
+		OwnedAgents:       []OwnedItemsResponse{*ownedAgents},
+		OwnedCards:        []OwnedItemsResponse{*ownedCards},
+		PlayerLoadout:     playerLoadout,
 	}, nil
 }
 
