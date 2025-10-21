@@ -15,15 +15,17 @@ var assets embed.FS
 
 var appobj *app.App
 
+var valorantApi *ValorantAPI
+
 func main() {
-	// Create an instance of the app structure
 	appobj = app.NewApp()
+	valorantApi = NewValorantAPI()
 
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "wails-template-svelte",
-		Width:  1024,
-		Height: 768,
+		Width:  1920,
+		Height: 1080,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
@@ -32,6 +34,7 @@ func main() {
 		Frameless:        true,
 		Bind: []interface{}{
 			appobj,
+			valorantApi,
 		},
 	})
 

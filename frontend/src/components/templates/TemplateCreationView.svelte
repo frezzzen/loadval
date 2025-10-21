@@ -1,0 +1,222 @@
+<script lang="ts">
+    import { useTemplateManager } from "../../managers/template-manager.svelte";
+    import type { main } from "../../../wailsjs/go/models";
+    import type { Template } from "../../types/template.type";
+    import LoadoutView from "../loadout/LoadoutView.svelte";
+    import CoreInput from "../core/core-input.svelte";
+
+    type Props = {
+        loadout: main.PlayerLoadoutResponse;
+        agent?: string;
+        onBack: () => void;
+        editingTemplate?: Template | null;
+    };
+
+    let { loadout, onBack, editingTemplate = null }: Props = $props();
+
+    let templateManager = useTemplateManager();
+
+    let template = $state<Template>(
+        editingTemplate
+            ? { ...editingTemplate }
+            : {
+                  id: crypto.randomUUID(),
+                  name: "",
+                  agent: "",
+                  loadout: JSON.parse(JSON.stringify(loadout)),
+              },
+    );
+
+    let isEditing = $derived(editingTemplate !== null);
+
+    function handleSaveTemplate() {
+        if (isEditing) {
+            templateManager.updateTemplate(template.id, template);
+        } else {
+            templateManager.addTemplate(template);
+        }
+        onBack();
+    }
+
+    function handleDelete() {
+        if (confirm(`Are you sure you want to delete "${template.name}"?`)) {
+            templateManager.removeTemplate(template.id);
+            onBack();
+        }
+    }
+</script>
+
+<div class="template-creation-view">
+    <div class="header">
+        <div class="header-top">
+            <h2 class="title">
+                {isEditing ? "Edit Template" : "Create New Template"}
+            </h2>
+            <div class="actions">
+                <button class="btn-secondary" onclick={onBack}>
+                    <span>Cancel</span>
+                </button>
+                {#if isEditing}
+                    <button class="btn-danger" onclick={handleDelete}>
+                        <span>Delete</span>
+                    </button>
+                {/if}
+                <button class="btn-primary" onclick={handleSaveTemplate}>
+                    <span>{isEditing ? "Save Changes" : "Save Template"}</span>
+                </button>
+            </div>
+        </div>
+        <div class="header-inputs">
+            <CoreInput
+                label="Name"
+                bind:value={template.name}
+                placeholder="Enter template name"
+            />
+        </div>
+    </div>
+    <LoadoutView bind:loadout={template.loadout} />
+</div>
+
+<style lang="scss">
+    .template-creation-view {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+
+        .header {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(
+                135deg,
+                rgba(173, 64, 255, 0.08),
+                rgba(122, 40, 203, 0.04)
+            );
+            border-radius: 12px;
+            border: 1px solid rgba(173, 64, 255, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+            .header-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 1rem;
+
+                .title {
+                    margin: 0;
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    color: #fff;
+                    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+                    letter-spacing: -0.025em;
+                }
+
+                .actions {
+                    display: flex;
+                    gap: 0.75rem;
+                }
+            }
+
+            .header-inputs {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        button {
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            outline: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+            span {
+                display: inline-block;
+            }
+
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            }
+
+            &:active {
+                transform: translateY(0);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            &.btn-primary {
+                background: linear-gradient(
+                    135deg,
+                    rgba(173, 64, 255, 0.8),
+                    rgba(122, 40, 203, 0.8)
+                );
+                color: white;
+                border: 1px solid rgba(173, 64, 255, 0.4);
+
+                &:hover {
+                    background: linear-gradient(
+                        135deg,
+                        rgba(173, 64, 255, 1),
+                        rgba(122, 40, 203, 1)
+                    );
+                    border-color: rgba(173, 64, 255, 0.6);
+                    box-shadow: 0 4px 16px rgba(173, 64, 255, 0.4);
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+            }
+
+            &.btn-secondary {
+                background: linear-gradient(
+                    135deg,
+                    rgba(255, 255, 255, 0.08),
+                    rgba(200, 200, 200, 0.05)
+                );
+                color: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+
+                &:hover {
+                    background: linear-gradient(
+                        135deg,
+                        rgba(255, 255, 255, 0.15),
+                        rgba(200, 200, 200, 0.1)
+                    );
+                    border-color: rgba(255, 255, 255, 0.4);
+                    color: #ffffff;
+                }
+            }
+
+            &.btn-danger {
+                background: linear-gradient(
+                    135deg,
+                    rgba(255, 70, 85, 0.2),
+                    rgba(230, 57, 70, 0.15)
+                );
+                color: #ff6b7a;
+                border: 1px solid rgba(255, 70, 85, 0.4);
+
+                &:hover {
+                    background: linear-gradient(
+                        135deg,
+                        rgba(255, 70, 85, 0.35),
+                        rgba(230, 57, 70, 0.3)
+                    );
+                    border-color: rgba(255, 70, 85, 0.6);
+                    color: #ff8590;
+                    box-shadow: 0 4px 16px rgba(255, 70, 85, 0.3);
+                }
+            }
+        }
+    }
+</style>
