@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	CurrentVersion = "0.0.2"
+	CurrentVersion = "0.0.1"
 	GitHubOwner    = "frezzzen"
 	GitHubRepo     = "loadval"
 )
@@ -110,9 +110,17 @@ func (u *UpdateAPI) CheckForUpdates() (*UpdateInfo, error) {
 	}
 
 	if updateAvailable {
-		assetName := getAssetNameForPlatform()
 		for _, asset := range release.Assets {
-			if strings.Contains(strings.ToLower(asset.Name), strings.ToLower(assetName)) {
+			assetName := strings.ToLower(asset.Name)
+			if runtime.GOOS == "windows" && (strings.Contains(assetName, "installer.exe") || strings.Contains(assetName, "windows")) {
+				updateInfo.DownloadURL = asset.BrowserDownloadURL
+				updateInfo.DownloadSize = asset.Size
+				break
+			} else if runtime.GOOS == "darwin" && (strings.Contains(assetName, ".dmg") || strings.Contains(assetName, "darwin")) {
+				updateInfo.DownloadURL = asset.BrowserDownloadURL
+				updateInfo.DownloadSize = asset.Size
+				break
+			} else if runtime.GOOS == "linux" && (strings.Contains(assetName, "linux") || strings.HasSuffix(assetName, ".appimage")) {
 				updateInfo.DownloadURL = asset.BrowserDownloadURL
 				updateInfo.DownloadSize = asset.Size
 				break
@@ -262,17 +270,35 @@ func (u *UpdateAPI) InstallUpdate(filePath string) error {
 
 	switch runtime.GOOS {
 	case "windows":
-		cmd := exec.Command(filePath, "/S")
+		programFiles := os.Getenv("ProgramFiles")
+		if programFiles == "" {
+			programFiles = "C:\\Program Files"
+		}
+		exePath := filepath.Join(programFiles, "frezzzen", "LOADVAL", "loadval.exe")
+
+		// Use PowerShell to run the installer and then restart the app
+		powerShellScript := fmt.Sprintf(`
+Start-Process -FilePath '%s' -ArgumentList '/S' -Verb RunAs -Wait
+Start-Sleep -Seconds 2
+Start-Process -FilePath '%s'
+`, filePath, exePath)
+
+		cmd := exec.Command("powershell", "-Command", powerShellScript)
 		if err := cmd.Start(); err != nil {
 			return fmt.Errorf("failed to start installer: %w", err)
 		}
-		os.Exit(0)
+
+		// Exit the current application after a short delay
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			os.Exit(0)
+		}()
+
+		return nil
 
 	default:
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
-
-	return nil
 }
 
 func (u *UpdateAPI) OpenDownloadFolder() error {
@@ -302,19 +328,6 @@ func getDownloadsDir() string {
 		appData = os.TempDir()
 	}
 	return filepath.Join(appData, "LOADVAL", "Updates")
-}
-
-func getAssetNameForPlatform() string {
-	switch runtime.GOOS {
-	case "windows":
-		return "windows"
-	case "darwin":
-		return "darwin"
-	case "linux":
-		return "linux"
-	default:
-		return runtime.GOOS
-	}
 }
 
 func compareVersions(v1, v2 string) int {
