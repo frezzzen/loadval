@@ -5,9 +5,10 @@
         agent: Agent;
         hasLoadout: boolean;
         onAgentClick: (agent: Agent) => void;
+        disabled?: boolean;
     };
 
-    let { agent, hasLoadout, onAgentClick }: Props = $props();
+    let { agent, hasLoadout, onAgentClick, disabled = false }: Props = $props();
 
     function handleClick() {
         onAgentClick(agent);
@@ -17,7 +18,9 @@
 <button
     class="agent-loadout-item"
     class:has-loadout={hasLoadout}
+    class:disabled
     onclick={handleClick}
+    {disabled}
 >
     <div class="agent-image-container">
         <img
@@ -82,6 +85,31 @@
             &:hover {
                 border-color: rgba(70, 243, 85, 0.6);
                 box-shadow: 0 8px 24px rgba(70, 243, 85, 0.3);
+            }
+        }
+
+        &.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #ff4444 !important;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 68, 68, 0.1),
+                rgba(255, 68, 68, 0.05)
+            ) !important;
+
+            &:hover {
+                transform: none;
+                border-color: #ff4444 !important;
+                box-shadow: none;
+            }
+
+            .agent-icon {
+                filter: grayscale(100%);
+            }
+
+            .agent-name {
+                color: rgba(255, 68, 68, 0.7);
             }
         }
 

@@ -1,9 +1,12 @@
+import { SetPlayerLoadout } from "../../wailsjs/go/main/ValorantAPI"
 import type { Template } from "../types/template.type"
-import type { main } from "wailsjs/go/models"
+import type { main } from "../../wailsjs/go/models"
 
 export class TemplateManager {
     templates = $state<Template[]>([])
     agentLoadouts = $state<Map<string, main.PlayerLoadoutResponse>>(new Map())
+    isAgentLoadoutsEnabled = $state<boolean>(localStorage.getItem("isAgentLoadoutsEnabled") === "true")
+    activeTemplate = $state<string | null>(localStorage.getItem("activeTemplate") || null)
 
     constructor() {
         const templates = localStorage.getItem("templates")
@@ -16,6 +19,20 @@ export class TemplateManager {
             const parsed = JSON.parse(agentLoadouts)
             this.agentLoadouts = new Map(Object.entries(parsed))
         }
+    }
+
+    setIsAgentLoadoutsEnabled(enabled: boolean) {
+        this.isAgentLoadoutsEnabled = enabled
+        localStorage.setItem("isAgentLoadoutsEnabled", enabled.toString())
+    }
+
+    setActiveTemplate(template: string | null) {
+        this.activeTemplate = template
+        localStorage.setItem("activeTemplate", template)
+    }
+
+    getActiveTemplate() {
+        return this.activeTemplate
     }
 
     addTemplate(template: Template) {
@@ -60,6 +77,16 @@ export class TemplateManager {
         this.agentLoadouts.delete(agentUuid)
         const obj = Object.fromEntries(this.agentLoadouts)
         localStorage.setItem("agentLoadouts", JSON.stringify(obj))
+    }
+
+
+    async saveLoadout(loadout: main.PlayerLoadoutResponse) {
+        try {
+            const result = await SetPlayerLoadout(loadout);
+            loadout = result;
+        } catch (error) {
+            console.error(error);
+        }
     }
 }
 

@@ -1,17 +1,10 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { QuitApp, MaximiseApp, MinimiseApp } from "../wailsjs/go/app/App";
-	import {
-		GetMainData,
-		GetPreGameMatch,
-		GetPreGamePlayer,
-		SetPlayerLoadout,
-	} from "../wailsjs/go/main/ValorantAPI";
+	import { GetMainData } from "../wailsjs/go/main/ValorantAPI";
 	import type { main } from "../wailsjs/go/models";
-	import TemplateMenu from "./components/templates/TemplateMenu.svelte";
 	import AppContainer from "./components/AppContainer.svelte";
-	import Loader from "./components/Loader.svelte";
-	import { useTemplateManager } from "./managers/template-manager.svelte";
+	import LoaderContainer from "./components/LoaderContainer.svelte";
 
 	function QuitButton() {
 		QuitApp();
@@ -25,28 +18,28 @@
 		MinimiseApp();
 	}
 
-	const templateManager = useTemplateManager();
-
 	let loadout = $state<main.PlayerLoadoutResponse | null>(null);
 	let ownedItems = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
 
-	onMount(async () => {
-		const mainData = await GetMainData();
-		loadout = mainData.PlayerLoadout || null;
-		ownedItems = mainData.OwnedItems[0].Entitlements || null;
+	onMount(() => {
+		(async () => {
+			const mainData = await GetMainData();
+			loadout = mainData.PlayerLoadout || null;
+			ownedItems = mainData.OwnedItems[0].Entitlements || null;
+		})();
 	});
 </script>
 
-<main>
-	<drag>
+<main style="--wails-draggable:drag">
+	<drag role="button" tabindex="0">
 		<button onclick={MaximiseButton}>
-			<span class="material-icons">maximize</span>
+			<span class="material-icons">fullscreen</span>
 		</button>
 		<button onclick={MinimiseButton}>
 			<span class="material-icons">minimize</span>
 		</button>
 		<button onclick={QuitButton}>
-			<span class="material-icons">close</span>
+			<span class="material-icons"> close </span>
 		</button>
 	</drag>
 
@@ -54,12 +47,22 @@
 		<AppContainer {loadout} {ownedItems} />
 	{:else}
 		<div class="loader-container">
-			<Loader />
+			<LoaderContainer />
 		</div>
 	{/if}
 </main>
 
 <style lang="scss">
+	main {
+		position: relative;
+		transition: transform 0.1s ease-out;
+
+		&.dragging {
+			cursor: grabbing;
+			user-select: none;
+		}
+	}
+
 	.title {
 		font-size: 1.6rem;
 		color: white;
@@ -113,6 +116,7 @@
 			transition: all 0.2s ease;
 			backdrop-filter: blur(5px);
 			border: 1px solid rgba(255, 255, 255, 0.1);
+			pointer-events: auto;
 
 			&:hover {
 				background: rgba(255, 255, 255, 0.2);

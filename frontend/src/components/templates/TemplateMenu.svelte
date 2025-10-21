@@ -87,17 +87,34 @@
 
         <div class="section">
             <div class="section-header">
-                <h2 class="section-title">Agent Loadouts</h2>
+                <div class="section-title-row">
+                    <h2 class="section-title">Agent Loadouts</h2>
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input
+                                type="checkbox"
+                                checked={templateManager.isAgentLoadoutsEnabled}
+                                oninput={() => {
+                                    templateManager.setIsAgentLoadoutsEnabled(
+                                        !templateManager.isAgentLoadoutsEnabled,
+                                    );
+                                }}
+                            />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
                 <p class="section-description">
-                    Click on an agent to customize their loadout
+                    Click on an agent to customize <br />
+                    their loadout keep in mind that if this is enabled, custom loadouts
+                    will be overridden when you select an agent.
                 </p>
             </div>
-            {#if valorantManager.agents.length === 0}
-                <div class="loader-container">
-                    <Loader />
-                </div>
-            {:else}
-                <div class="agent-grid">
+            {#if valorantManager.agents.length === 0}{:else}
+                <div
+                    class="agent-grid"
+                    class:disabled={!templateManager.isAgentLoadoutsEnabled}
+                >
                     {#each playableAgents as agent}
                         <AgentLoadoutItem
                             {agent}
@@ -105,6 +122,7 @@
                                 agent.uuid,
                             )}
                             {onAgentClick}
+                            disabled={!templateManager.isAgentLoadoutsEnabled}
                         />
                     {/each}
                 </div>
@@ -213,6 +231,116 @@
                 flex-direction: column;
                 gap: 0.5rem;
 
+                .section-title-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 1rem;
+
+                    .section-title {
+                        margin: 0;
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        color: #fff;
+                        text-transform: uppercase;
+                        letter-spacing: 0.05em;
+                    }
+
+                    .switch-container {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75rem;
+
+                        .switch {
+                            position: relative;
+                            display: inline-block;
+                            width: 52px;
+                            height: 28px;
+
+                            input {
+                                opacity: 0;
+                                width: 0;
+                                height: 0;
+
+                                &:checked + .slider {
+                                    background: linear-gradient(
+                                        135deg,
+                                        #ad40ff,
+                                        #7a28cb
+                                    );
+                                    border-color: #ad40ff;
+
+                                    &:before {
+                                        transform: translateX(24px);
+                                        box-shadow: 0 2px 8px
+                                            rgba(173, 64, 255, 0.4);
+                                    }
+                                }
+
+                                &:focus + .slider {
+                                    box-shadow: 0 0 0 3px
+                                        rgba(173, 64, 255, 0.2);
+                                }
+                            }
+
+                            .slider {
+                                position: absolute;
+                                cursor: pointer;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background: linear-gradient(
+                                    135deg,
+                                    rgba(255, 255, 255, 0.15),
+                                    rgba(255, 255, 255, 0.05)
+                                );
+                                transition: all 0.3s
+                                    cubic-bezier(0.4, 0, 0.2, 1);
+                                border-radius: 28px;
+                                border: 1px solid rgba(255, 255, 255, 0.2);
+                                backdrop-filter: blur(10px);
+
+                                &:before {
+                                    position: absolute;
+                                    content: "";
+                                    height: 22px;
+                                    width: 22px;
+                                    left: 3px;
+                                    bottom: 2px;
+                                    background: linear-gradient(
+                                        135deg,
+                                        #ffffff,
+                                        #f8f9fa
+                                    );
+                                    transition: all 0.3s
+                                        cubic-bezier(0.4, 0, 0.2, 1);
+                                    border-radius: 50%;
+                                    box-shadow:
+                                        0 2px 6px rgba(0, 0, 0, 0.15),
+                                        0 1px 2px rgba(0, 0, 0, 0.1);
+                                }
+
+                                &:hover {
+                                    border-color: rgba(255, 255, 255, 0.3);
+                                    background: linear-gradient(
+                                        135deg,
+                                        rgba(255, 255, 255, 0.2),
+                                        rgba(255, 255, 255, 0.1)
+                                    );
+                                }
+                            }
+                        }
+
+                        .switch-label {
+                            font-size: 0.9rem;
+                            font-weight: 500;
+                            color: rgba(255, 255, 255, 0.8);
+                            min-width: 60px;
+                        }
+                    }
+                }
+
                 .section-title {
                     margin: 0;
                     font-size: 1.5rem;
@@ -235,9 +363,29 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             gap: 1rem;
+            transition: all 0.3s ease;
 
             @media (max-width: 768px) {
                 grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+
+            &.disabled {
+                opacity: 0.4;
+                pointer-events: none;
+                position: relative;
+
+                &::before {
+                    content: "";
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    border: 2px solid #ff4444;
+                    border-radius: 8px;
+                    pointer-events: none;
+                    z-index: 1;
+                }
             }
         }
 

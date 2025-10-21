@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -16,7 +15,6 @@ func NewApp() *App {
 }
 
 func Startup(a *App, ctx context.Context) {
-	fmt.Println("App Startup")
 	a.ctx = ctx
 }
 

@@ -10,7 +10,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
-//go:embed all:frontend/dist
 var assets embed.FS
 
 var appobj *app.App
@@ -23,7 +22,7 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "wails-template-svelte",
+		Title:  "LOADVAL",
 		Width:  1920,
 		Height: 1080,
 		AssetServer: &assetserver.Options{

@@ -27,19 +27,9 @@
         loadoutManager.setOwnedItems(ownedItems);
     });
 
-    async function saveLoadout(loadout: main.PlayerLoadoutResponse) {
-        console.log(loadout);
-        try {
-            const result = await SetPlayerLoadout(loadout);
-            loadout = result;
-            console.log("Loadout saved");
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
     async function run() {
         let interval = setInterval(async () => {
+            if (!templateManager.isAgentLoadoutsEnabled) return;
             const preGamePlayer = await GetPreGamePlayer();
             if (preGamePlayer) {
                 const me = preGamePlayer.Subject;
@@ -47,7 +37,6 @@
                     clearInterval(interval);
                     const preGameMatch = await GetPreGameMatch();
                     if (preGameMatch) {
-                        console.log(preGameMatch);
                         const myTeam = preGameMatch.Teams.find((team) =>
                             team.Players.some(
                                 (player) => player.Subject === me,
@@ -57,19 +46,15 @@
                             (player) => player.Subject === me,
                         );
                         if (mePlayer) {
-                            console.log(mePlayer.CharacterSelectionState);
                             if (mePlayer.CharacterSelectionState === "locked") {
-                                console.log(
-                                    "locked",
-                                    templateManager.agentLoadouts,
-                                );
                                 const agentLoadout =
                                     templateManager.getAgentLoadout(
                                         mePlayer.CharacterID,
                                     );
                                 if (agentLoadout) {
-                                    console.log(agentLoadout);
-                                    await saveLoadout(agentLoadout);
+                                    await templateManager.saveLoadout(
+                                        agentLoadout,
+                                    );
                                     clearInterval(secondInterval);
                                     setTimeout(() => {
                                         run();
@@ -78,9 +63,9 @@
                             }
                         }
                     }
-                }, 1000);
+                }, 5000);
             }
-        }, 5000);
+        }, 30000);
     }
 
     run();

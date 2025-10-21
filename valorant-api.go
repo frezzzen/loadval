@@ -75,13 +75,11 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 
 	valorantPath := path.Join(appData, "VALORANT", "Saved", "Logs", "ShooterGame.log")
 	if _, err := os.Stat(valorantPath); os.IsNotExist(err) {
-		fmt.Println("Valorant shootergame file does not exist")
 		return nil, fmt.Errorf("valorant shootergame file does not exist")
 	}
 
 	file, err := os.Open(valorantPath)
 	if err != nil {
-		fmt.Println("Error opening valorant shootergame file")
 		return nil, fmt.Errorf("error opening valorant shootergame file: %w", err)
 	}
 	defer file.Close()
@@ -90,7 +88,6 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 
 	content, err := io.ReadAll(file)
 	if err != nil {
-		fmt.Println("Error reading valorant shootergame file")
 		return nil, fmt.Errorf("error reading valorant shootergame file: %w", err)
 	}
 
@@ -98,7 +95,6 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 	matches := re.FindStringSubmatch(string(content))
 
 	if len(matches) == 0 {
-		fmt.Println("No matches found")
 		return nil, fmt.Errorf("no matches found")
 	}
 
@@ -106,7 +102,6 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 	v.Shard = matches[2]
 
 	if v.Region == "" || v.Shard == "" {
-		fmt.Println("Region or shard is empty")
 		return nil, fmt.Errorf("region or shard is empty")
 	}
 
@@ -115,26 +110,18 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 
 	err = v.waitForLockfile()
 	if err != nil {
-		fmt.Println("Error waiting for lockfile:", err)
 		return nil, fmt.Errorf("error waiting for lockfile: %w", err)
 	}
-	fmt.Println("Lockfile detected!")
 
 	lockfileData, err := v.getLockfileDataWithRetry()
 	if err != nil {
-		fmt.Println("Error getting lockfile data:", err)
 		return nil, fmt.Errorf("error getting lockfile data: %w", err)
 	}
 
-	fmt.Println("Lockfile data:", lockfileData)
-
 	entitlementsToken, err := v.getEntitlementsTokenWithRetry(lockfileData.Port, lockfileData.Password)
 	if err != nil {
-		fmt.Println("Error getting session data:", err)
 		return nil, fmt.Errorf("error getting session data: %w", err)
 	}
-
-	fmt.Println("Entitlements Token:", entitlementsToken)
 
 	v.AccessToken = entitlementsToken.AccessToken
 	v.Token = entitlementsToken.Token
@@ -142,13 +129,11 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 
 	ownedItems, err := v.GetOwnedItems(ItemTypeID_Skins)
 	if err != nil {
-		fmt.Println("Error getting owned items:", err)
 		return nil, fmt.Errorf("error getting owned items: %w", err)
 	}
 
 	playerLoadout, err := v.GetPlayerLoadout()
 	if err != nil {
-		fmt.Println("Error getting player loadout:", err)
 		return nil, fmt.Errorf("error getting player loadout: %w", err)
 	}
 
@@ -284,7 +269,6 @@ func (v *ValorantAPI) getLockfileDataWithRetry() (*LockfileData, error) {
 			break
 		}
 
-		fmt.Println("Waiting for lockfile...")
 		if waitErr := v.waitForLockfile(); waitErr != nil {
 			return nil, waitErr
 		}
@@ -298,6 +282,8 @@ func (v *ValorantAPI) getEntitlementsTokenWithRetry(port, password string) (*Ent
 	var entitlementsToken *EntitlementsTokenResponse
 	var err error
 	lastRetryMessage := time.Now()
+	retryCount := 0
+	maxRetries := 3
 
 	for {
 		entitlementsToken, err = v.getEntitlementsToken(port, password)
@@ -313,8 +299,27 @@ func (v *ValorantAPI) getEntitlementsTokenWithRetry(port, password string) (*Ent
 
 		currentTime := time.Now()
 		if currentTime.Sub(lastRetryMessage) > time.Second {
-			fmt.Println("Unable to get session data, retrying...")
 			lastRetryMessage = currentTime
+		}
+
+		// If we've failed multiple times, try to re-detect lockfile
+		retryCount++
+		if retryCount >= maxRetries {
+			err = v.waitForLockfile()
+			if err != nil {
+				return nil, fmt.Errorf("error re-detecting lockfile: %w", err)
+			}
+
+			// Get fresh lockfile data
+			lockfileData, lockErr := v.getLockfileDataWithRetry()
+			if lockErr != nil {
+				return nil, fmt.Errorf("error getting fresh lockfile data: %w", lockErr)
+			}
+
+			// Update port and password with fresh data
+			port = lockfileData.Port
+			password = lockfileData.Password
+			retryCount = 0 // Reset retry count
 		}
 	}
 
@@ -364,7 +369,6 @@ func (v *ValorantAPI) GetPlayerLoadout() (*PlayerLoadoutResponse, error) {
 
 	req, err := http.NewRequest("GET", "https://pd."+v.Region+".a.pvp.net/personalization/v2/players/"+v.PlayerUUID+"/playerloadout", nil)
 	if err != nil {
-		fmt.Println("failed to create request: %w", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	for key, value := range headers {
@@ -373,22 +377,17 @@ func (v *ValorantAPI) GetPlayerLoadout() (*PlayerLoadoutResponse, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("failed to make request: %w", err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("failed to get player loadout: %w", err)
 		return nil, fmt.Errorf("failed to get player loadout: %w", err)
 	}
 
-	fmt.Println(string(body))
-
 	var playerLoadout PlayerLoadoutResponse
 	if err := json.Unmarshal(body, &playerLoadout); err != nil {
-		fmt.Println("failed to unmarshal player loadout: %w", err)
 		return nil, fmt.Errorf("failed to unmarshal player loadout: %w", err)
 	}
 
@@ -406,16 +405,11 @@ func (v *ValorantAPI) SetPlayerLoadout(playerLoadout *PlayerLoadoutResponse) (*P
 
 	requestBody, err := json.Marshal(playerLoadout)
 	if err != nil {
-		fmt.Println("failed to marshal player loadout: %w", err)
 		return nil, fmt.Errorf("failed to marshal player loadout: %w", err)
 	}
 
-	fmt.Println(" -------------------------------- REQUEST --------------------------------")
-	fmt.Println(string(requestBody))
-
 	req, err := http.NewRequest("PUT", "https://pd."+v.Region+".a.pvp.net/personalization/v2/players/"+v.PlayerUUID+"/playerloadout", bytes.NewBuffer(requestBody))
 	if err != nil {
-		fmt.Println("failed to create request: %w", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	for key, value := range headers {
@@ -424,20 +418,14 @@ func (v *ValorantAPI) SetPlayerLoadout(playerLoadout *PlayerLoadoutResponse) (*P
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("failed to make request: %w", err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("failed to get player loadout: %w", err)
 		return nil, fmt.Errorf("failed to get player loadout: %w", err)
 	}
-
-	fmt.Println(" -------------------------------- RESPONSE --------------------------------")
-	fmt.Println(string(body))
-	fmt.Println("--------------------------------")
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to set player loadout: %w", err)
@@ -445,7 +433,6 @@ func (v *ValorantAPI) SetPlayerLoadout(playerLoadout *PlayerLoadoutResponse) (*P
 
 	var playerLoadoutResponse PlayerLoadoutResponse
 	if err := json.Unmarshal(body, &playerLoadoutResponse); err != nil {
-		fmt.Println("failed to unmarshal player loadout: %w", err)
 		return nil, fmt.Errorf("failed to unmarshal player loadout: %w", err)
 	}
 
@@ -473,7 +460,6 @@ func (v *ValorantAPI) GetOwnedItems(ItemTypeID string) (*OwnedItemsResponse, err
 	url := fmt.Sprintf("https://pd.%s.a.pvp.net/store/v1/entitlements/%s/%s", v.Region, v.PlayerUUID, ItemTypeID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("failed to create request: %w", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	for key, value := range headers {
@@ -482,20 +468,17 @@ func (v *ValorantAPI) GetOwnedItems(ItemTypeID string) (*OwnedItemsResponse, err
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("failed to make request: %w", err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("failed to get owned items: %w", err)
 		return nil, fmt.Errorf("failed to get owned items: %w", err)
 	}
 
 	var ownedItems OwnedItemsResponse
 	if err := json.Unmarshal(body, &ownedItems); err != nil {
-		fmt.Println("failed to unmarshal owned items: %w", err)
 		return nil, fmt.Errorf("failed to unmarshal owned items: %w", err)
 	}
 
@@ -523,12 +506,8 @@ func (v *ValorantAPI) GetPreGamePlayer() (*PreGamePlayerResponse, error) {
 	}
 	// https://glz-{region}-1.{shard}.a.pvp.net/pregame/v1/players/{puuid}
 	url := fmt.Sprintf("https://glz-%s-1.%s.a.pvp.net/pregame/v1/players/%s", v.Region, v.Shard, v.PlayerUUID)
-	fmt.Println(" -------------------------------- URL --------------------------------")
-	fmt.Println(url)
-	fmt.Println("--------------------------------")
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("failed to create request: %w", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	for key, value := range headers {
@@ -537,24 +516,17 @@ func (v *ValorantAPI) GetPreGamePlayer() (*PreGamePlayerResponse, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("failed to make request: %w", err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("failed to get pre game player: %w", err)
 		return nil, fmt.Errorf("failed to get pre game player: %w", err)
 	}
 
-	fmt.Println(" -------------------------------- RESPONSE PLAYERS --------------------------------")
-	fmt.Println(string(body))
-	fmt.Println("--------------------------------")
-
 	var preGamePlayer PreGamePlayerResponse
 	if err := json.Unmarshal(body, &preGamePlayer); err != nil {
-		fmt.Println("failed to unmarshal pre game player: %w", err)
 		return nil, fmt.Errorf("failed to unmarshal pre game player: %w", err)
 	}
 
@@ -662,10 +634,8 @@ func (v *ValorantAPI) GetPreGameMatch() (*PreGameMatchResponse, error) {
 	}
 	// https://glz-{region}-1.{shard}.a.pvp.net/pregame/v1/matches/{pre-game match id}
 	url := fmt.Sprintf("https://glz-%s-1.%s.a.pvp.net/pregame/v1/matches/%s", v.Region, v.Shard, v.MatchID)
-	fmt.Println(url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Println("failed to create request: %w", err)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	for key, value := range headers {
@@ -674,24 +644,17 @@ func (v *ValorantAPI) GetPreGameMatch() (*PreGameMatchResponse, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Println("failed to make request: %w", err)
 		return nil, fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("failed to get pre game match: %w", err)
 		return nil, fmt.Errorf("failed to get pre game match: %w", err)
 	}
 
-	fmt.Println(" -------------------------------- RESPONSE --------------------------------")
-	fmt.Println(string(body))
-	fmt.Println("--------------------------------")
-
 	var preGameMatch PreGameMatchResponse
 	if err := json.Unmarshal(body, &preGameMatch); err != nil {
-		fmt.Println("failed to unmarshal pre game match: %w", err)
 		return nil, fmt.Errorf("failed to unmarshal pre game match: %w", err)
 	}
 

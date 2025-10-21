@@ -1,6 +1,7 @@
 <script lang="ts">
     import { useLoadoutManager } from "../../managers/loadout-manager.svelte";
     import type { CustomGun, Skin } from "../../types/guns.types";
+    import CoreSwiper from "../core/core-swiper.svelte";
 
     type Props = {
         onSelect?: (skin: string, chroma?: string, level?: string) => void;
@@ -39,12 +40,24 @@
     });
 
     const ownedSkins = $derived.by((): Skin[] => {
-        return customGun.weapon.skins.filter((skin) =>
-            loadoutManager.ownedItems?.some(
-                (item) => item.ItemID === skin.uuid,
-            ),
-        );
+        return customGun.weapon.skins.filter((skin) => {
+            const isInSkins = loadoutManager.ownedItems?.some(
+                (ownedItem) => ownedItem.ItemID === skin.uuid,
+            );
+            if (isInSkins) {
+                return true;
+            }
+            const levels = skin.levels.filter((level) => {
+                const isInLevels = loadoutManager.ownedItems?.some(
+                    (ownedItem) => ownedItem.ItemID === level.uuid,
+                );
+                return isInLevels;
+            });
+            return levels.length > 0;
+        });
     });
+
+    $inspect(ownedSkins);
 
     function handleBackClick() {
         if (onBack) {
@@ -230,48 +243,44 @@
     <div class="customization-section">
         <h3 class="section-title">Skins</h3>
         <div class="other-guns">
-            {#each customGun.weapon.skins as skin (skin.uuid)}
-                <div
-                    class="other-gun"
-                    class:selected={skin.uuid === selectedSkin}
-                    role="button"
-                    tabindex="0"
-                    onclick={() => handleSkinSelect(skin.uuid)}
-                    onkeydown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                            handleSkinSelect(skin.uuid);
-                        }
-                    }}
-                    onmouseenter={() => {
-                        hoveredSkinImage = skin.displayIcon || "";
-                    }}
-                    onmouseleave={() => {
-                        hoveredSkinImage = null;
-                    }}
-                >
-                    <img src={skin.displayIcon} alt={skin.displayName} />
-                    <div class="gun-name">{skin.displayName}</div>
-                    {#if skin.uuid === selectedSkin}
-                        <div class="selected-badge">
-                            <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    d="M20 6L9 17L4 12"
-                                    stroke="currentColor"
-                                    stroke-width="3"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                />
-                            </svg>
-                        </div>
-                    {/if}
-                </div>
-            {/each}
+            <CoreSwiper options={{ slidesPerView: 8, spaceBetween: 10 }}>
+                {#each ownedSkins as skin (skin.uuid)}
+                    <div
+                        class="other-gun swiper-slide"
+                        class:selected={skin.uuid === selectedSkin}
+                        role="button"
+                        tabindex="0"
+                        onclick={() => handleSkinSelect(skin.uuid)}
+                        onkeydown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                                handleSkinSelect(skin.uuid);
+                            }
+                        }}
+                    >
+                        <img src={skin.displayIcon} alt={skin.displayName} />
+                        <div class="gun-name">{skin.displayName}</div>
+                        {#if skin.uuid === selectedSkin}
+                            <div class="selected-badge">
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M20 6L9 17L4 12"
+                                        stroke="currentColor"
+                                        stroke-width="3"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    />
+                                </svg>
+                            </div>
+                        {/if}
+                    </div>
+                {/each}
+            </CoreSwiper>
         </div>
     </div>
 </div>
@@ -430,10 +439,6 @@
         }
 
         .other-guns {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-            gap: 1.5rem;
-            overflow-y: auto;
             padding: 0.5rem;
         }
 

@@ -19,6 +19,13 @@
     }
 
     function handleClick() {
+        templateManager.setActiveTemplate(template.id);
+        templateManager.saveLoadout(template.loadout);
+    }
+
+    function handleEdit(e: Event) {
+        e.stopPropagation();
+        templateManager.setActiveTemplate(null);
         onEdit(template);
     }
 
@@ -32,6 +39,7 @@
 
 <div
     class="template-item"
+    class:active={templateManager.activeTemplate === template.id}
     onclick={handleClick}
     onkeydown={handleKeydown}
     role="button"
@@ -44,30 +52,68 @@
                 <span class="agent-badge">{template.agent}</span>
             {/if}
         </div>
-        <button
-            class="btn-delete"
-            title="Delete template"
-            onclick={handleDelete}
-            aria-label="Delete template"
-        >
-            <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
+
+        <div class="action-buttons">
+            <button
+                class="btn-edit"
+                title="Edit template"
+                onclick={handleEdit}
+                aria-label="Edit template"
             >
-                <path
-                    d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                ></path>
-            </svg>
-        </button>
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path
+                        d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    ></path>
+                    <path
+                        d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    ></path>
+                </svg>
+            </button>
+            <button
+                class="btn-delete"
+                title="Delete template"
+                onclick={handleDelete}
+                aria-label="Delete template"
+            >
+                <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path
+                        d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                    ></path>
+                </svg>
+            </button>
+        </div>
     </div>
 </div>
 
 <style lang="scss">
     .template-item {
+        &.active {
+            background: linear-gradient(
+                135deg,
+                rgba(173, 64, 255, 0.15),
+                rgba(122, 40, 203, 0.1)
+            );
+            border-color: rgba(173, 64, 255, 0.6);
+            box-shadow: 0 8px 20px rgba(173, 64, 255, 0.3);
+            .action-buttons {
+                opacity: 1;
+            }
+        }
+
         background: linear-gradient(
             135deg,
             rgba(173, 64, 255, 0.08),
@@ -86,7 +132,7 @@
             box-shadow: 0 8px 20px rgba(173, 64, 255, 0.3);
             border-color: rgba(173, 64, 255, 0.6);
 
-            .btn-delete {
+            .action-buttons {
                 opacity: 1;
             }
         }
@@ -135,8 +181,40 @@
             }
 
             &:hover {
-                .btn-delete {
+                .action-buttons {
                     opacity: 1;
+                }
+            }
+
+            .action-buttons {
+                display: flex;
+                gap: 0.5rem;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .btn-edit {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 40px;
+                padding: 0;
+                background: rgba(64, 173, 255, 0.15);
+                border: 1px solid rgba(64, 173, 255, 0.3);
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                color: #40adff;
+
+                &:hover {
+                    transform: scale(1.1);
+                    background: rgba(64, 173, 255, 0.25);
+                    border-color: rgba(64, 173, 255, 0.5);
+                }
+
+                svg {
+                    flex-shrink: 0;
                 }
             }
 
@@ -153,7 +231,6 @@
                 cursor: pointer;
                 transition: all 0.3s ease;
                 color: #ff4655;
-                opacity: 0;
 
                 &:hover {
                     transform: scale(1.1);
