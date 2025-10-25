@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	CurrentVersion = "0.0.1"
+	CurrentVersion = "0.0.2"
 	GitHubOwner    = "frezzzen"
 	GitHubRepo     = "loadval"
 )
