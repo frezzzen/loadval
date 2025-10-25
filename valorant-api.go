@@ -67,9 +67,11 @@ func NewValorantAPI() *ValorantAPI {
 	}
 }
 
-func (v *ValorantAPI) GetMainData() (*MainData, error) {
+func (v *ValorantAPI) GetPlayerUUID() string {
+	return v.PlayerUUID
+}
 
-	// %LocalAppData%\VALORANT\Saved\Logs\ShooterGame.log
+func (v *ValorantAPI) GetMainData() (*MainData, error) {
 
 	appData := os.Getenv("LOCALAPPDATA")
 	if appData == "" {
@@ -86,8 +88,6 @@ func (v *ValorantAPI) GetMainData() (*MainData, error) {
 		return nil, fmt.Errorf("error opening valorant shootergame file: %w", err)
 	}
 	defer file.Close()
-
-	// Read whole file
 
 	content, err := io.ReadAll(file)
 	if err != nil {
@@ -174,19 +174,16 @@ func (v *ValorantAPI) waitForLockfile() error {
 	configPath := filepath.Join(appData, "Riot Games", "Riot Client", "Config")
 	lockfilePath := filepath.Join(configPath, "lockfile")
 
-	// Check if lockfile already exists
 	if _, err := os.Stat(lockfilePath); err == nil {
 		return nil
 	}
 
-	// Watch the directory for file changes
 	watcher, err := os.Open(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to open config directory: %v", err)
 	}
 	defer watcher.Close()
 
-	// Poll for the lockfile every 100ms
 	for {
 		time.Sleep(100 * time.Millisecond)
 		if _, err := os.Stat(lockfilePath); err == nil {
@@ -195,7 +192,6 @@ func (v *ValorantAPI) waitForLockfile() error {
 	}
 }
 
-// LockfileData represents the data from the Riot Client lockfile
 type LockfileData struct {
 	Name     string
 	PID      string
@@ -205,7 +201,6 @@ type LockfileData struct {
 }
 
 type EntitlementsTokenResponse struct {
-	/** Used as the token in requests */
 	AccessToken  string
 	Entitlements []interface{}
 	Issuer       string
@@ -213,7 +208,6 @@ type EntitlementsTokenResponse struct {
 	Token        string
 }
 
-// getLockfileData reads and parses the Riot Client lockfile
 func (v *ValorantAPI) getLockfileData() (*LockfileData, error) {
 	appData := os.Getenv("LOCALAPPDATA")
 	if appData == "" {
@@ -240,14 +234,11 @@ func (v *ValorantAPI) getLockfileData() (*LockfileData, error) {
 	}, nil
 }
 
-// getSession fetches session data from the Riot Client API
 func (v *ValorantAPI) getEntitlementsToken(port, password string) (*EntitlementsTokenResponse, error) {
 	url := fmt.Sprintf("https://127.0.0.1:%s/entitlements/v1/token", port)
 
-	// Create basic auth header
 	auth := base64.StdEncoding.EncodeToString([]byte("riot:" + password))
 
-	// Create HTTP client with TLS config to skip certificate verification
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -279,7 +270,6 @@ func (v *ValorantAPI) getEntitlementsToken(port, password string) (*Entitlements
 	return &result, nil
 }
 
-// getLockfileDataWithRetry attempts to get lockfile data with retry logic
 func (v *ValorantAPI) getLockfileDataWithRetry() (*LockfileData, error) {
 	var lockData *LockfileData
 	var err error
@@ -298,7 +288,6 @@ func (v *ValorantAPI) getLockfileDataWithRetry() (*LockfileData, error) {
 	return lockData, nil
 }
 
-// getSessionDataWithRetry attempts to get session data with retry logic
 func (v *ValorantAPI) getEntitlementsTokenWithRetry(port, password string) (*EntitlementsTokenResponse, error) {
 	var entitlementsToken *EntitlementsTokenResponse
 	var err error
@@ -309,7 +298,6 @@ func (v *ValorantAPI) getEntitlementsTokenWithRetry(port, password string) (*Ent
 	for {
 		entitlementsToken, err = v.getEntitlementsToken(port, password)
 		if err == nil {
-			// Check if session is loaded
 			if entitlementsToken.AccessToken == "" {
 				time.Sleep(1500 * time.Millisecond)
 				entitlementsToken = nil
@@ -323,7 +311,6 @@ func (v *ValorantAPI) getEntitlementsTokenWithRetry(port, password string) (*Ent
 			lastRetryMessage = currentTime
 		}
 
-		// If we've failed multiple times, try to re-detect lockfile
 		retryCount++
 		if retryCount >= maxRetries {
 			err = v.waitForLockfile()
@@ -337,10 +324,9 @@ func (v *ValorantAPI) getEntitlementsTokenWithRetry(port, password string) (*Ent
 				return nil, fmt.Errorf("error getting fresh lockfile data: %w", lockErr)
 			}
 
-			// Update port and password with fresh data
 			port = lockfileData.Port
 			password = lockfileData.Password
-			retryCount = 0 // Reset retry count
+			retryCount = 0
 		}
 	}
 
@@ -477,7 +463,6 @@ func (v *ValorantAPI) GetOwnedItems(ItemTypeID string) (*OwnedItemsResponse, err
 		"X-Riot-ClientVersion":    v.Version,
 		"Authorization":           "Bearer " + v.AccessToken,
 	}
-	// pd.{shard}.a.pvp.net/store/v1/entitlements/{puuid}/{ItemTypeID}
 	url := fmt.Sprintf("https://pd.%s.a.pvp.net/store/v1/entitlements/%s/%s", v.Region, v.PlayerUUID, ItemTypeID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -525,7 +510,6 @@ func (v *ValorantAPI) GetPreGamePlayer() (*PreGamePlayerResponse, error) {
 		"X-Riot-ClientVersion":    v.Version,
 		"Authorization":           "Bearer " + v.AccessToken,
 	}
-	// https://glz-{region}-1.{shard}.a.pvp.net/pregame/v1/players/{puuid}
 	url := fmt.Sprintf("https://glz-%s-1.%s.a.pvp.net/pregame/v1/players/%s", v.Region, v.Shard, v.PlayerUUID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -560,85 +544,67 @@ func (v *ValorantAPI) GetPreGamePlayer() (*PreGamePlayerResponse, error) {
 	return &preGamePlayer, nil
 }
 
-// PreGameMatchResponse represents the pre-game match data
 type PreGameMatchResponse struct {
-	// Pre-Game Match ID
-	ID                 string        `json:"ID"`
-	Version            int           `json:"Version"`
-	Teams              []Team        `json:"Teams"`
-	AllyTeam           *Team         `json:"AllyTeam"`
-	EnemyTeam          *Team         `json:"EnemyTeam"`
-	ObserverSubjects   []interface{} `json:"ObserverSubjects"`
-	MatchCoaches       []interface{} `json:"MatchCoaches"`
-	EnemyTeamSize      int           `json:"EnemyTeamSize"`
-	EnemyTeamLockCount int           `json:"EnemyTeamLockCount"`
-	PregameState       string        `json:"PregameState"` // "character_select_active" | "provisioned"
-	// Date in ISO 8601 format
-	LastUpdated string `json:"LastUpdated"`
-	// Map ID
-	MapID          string        `json:"MapID"`
-	MapSelectPool  []interface{} `json:"MapSelectPool"`
-	BannedMapIDs   []interface{} `json:"BannedMapIDs"`
-	CastedVotes    *interface{}  `json:"CastedVotes,omitempty"`
-	MapSelectSteps []interface{} `json:"MapSelectSteps"`
-	MapSelectStep  int           `json:"MapSelectStep"`
-	Team1          string        `json:"Team1"` // ("Blue" | "Red") | string
-	GamePodID      string        `json:"GamePodID"`
-	// Game Mode
-	Mode           string `json:"Mode"`
-	VoiceSessionID string `json:"VoiceSessionID"`
-	MUCName        string `json:"MUCName"`
-	// JWT containing match ID and player IDs
-	TeamMatchToken string `json:"TeamMatchToken"`
-	// Queue ID
-	QueueID              string      `json:"QueueID"`
-	ProvisioningFlowID   string      `json:"ProvisioningFlowID"` // "Matchmaking" | "CustomGame"
-	IsRanked             bool        `json:"IsRanked"`
-	PhaseTimeRemainingNS int64       `json:"PhaseTimeRemainingNS"`
-	StepTimeRemainingNS  int64       `json:"StepTimeRemainingNS"`
-	AltModesFlagADA      bool        `json:"altModesFlagADA"`
-	TournamentMetadata   interface{} `json:"TournamentMetadata"`
-	RosterMetadata       interface{} `json:"RosterMetadata"`
+	ID                   string        `json:"ID"`
+	Version              int           `json:"Version"`
+	Teams                []Team        `json:"Teams"`
+	AllyTeam             *Team         `json:"AllyTeam"`
+	EnemyTeam            *Team         `json:"EnemyTeam"`
+	ObserverSubjects     []interface{} `json:"ObserverSubjects"`
+	MatchCoaches         []interface{} `json:"MatchCoaches"`
+	EnemyTeamSize        int           `json:"EnemyTeamSize"`
+	EnemyTeamLockCount   int           `json:"EnemyTeamLockCount"`
+	PregameState         string        `json:"PregameState"` // "character_select_active" | "provisioned"
+	LastUpdated          string        `json:"LastUpdated"`
+	MapID                string        `json:"MapID"`
+	MapSelectPool        []interface{} `json:"MapSelectPool"`
+	BannedMapIDs         []interface{} `json:"BannedMapIDs"`
+	CastedVotes          *interface{}  `json:"CastedVotes,omitempty"`
+	MapSelectSteps       []interface{} `json:"MapSelectSteps"`
+	MapSelectStep        int           `json:"MapSelectStep"`
+	Team1                string        `json:"Team1"`
+	GamePodID            string        `json:"GamePodID"`
+	Mode                 string        `json:"Mode"`
+	VoiceSessionID       string        `json:"VoiceSessionID"`
+	MUCName              string        `json:"MUCName"`
+	TeamMatchToken       string        `json:"TeamMatchToken"`
+	QueueID              string        `json:"QueueID"`
+	ProvisioningFlowID   string        `json:"ProvisioningFlowID"`
+	IsRanked             bool          `json:"IsRanked"`
+	PhaseTimeRemainingNS int64         `json:"PhaseTimeRemainingNS"`
+	StepTimeRemainingNS  int64         `json:"StepTimeRemainingNS"`
+	AltModesFlagADA      bool          `json:"altModesFlagADA"`
+	TournamentMetadata   interface{}   `json:"TournamentMetadata"`
+	RosterMetadata       interface{}   `json:"RosterMetadata"`
 }
 
-// Team represents a team in the pre-game match
 type Team struct {
-	TeamID  string   `json:"TeamID"` // ("Blue" | "Red") | string
+	TeamID  string   `json:"TeamID"`
 	Players []Player `json:"Players"`
 }
 
-// Player represents a player in the pre-game match
 type Player struct {
-	// Player UUID
-	Subject string `json:"Subject"`
-	// Character ID
+	Subject                 string            `json:"Subject"`
 	CharacterID             string            `json:"CharacterID"`
-	CharacterSelectionState string            `json:"CharacterSelectionState"` // "" | "selected" | "locked"
-	PregamePlayerState      string            `json:"PregamePlayerState"`      // "joined"
+	CharacterSelectionState string            `json:"CharacterSelectionState"`
+	PregamePlayerState      string            `json:"PregamePlayerState"`
 	CompetitiveTier         int               `json:"CompetitiveTier"`
 	PlayerIdentity          PlayerIdentity    `json:"PlayerIdentity"`
 	SeasonalBadgeInfo       SeasonalBadgeInfo `json:"SeasonalBadgeInfo"`
 	IsCaptain               bool              `json:"IsCaptain"`
 }
 
-// PlayerIdentity represents player identity information
 type PlayerIdentity struct {
-	// Player UUID
-	Subject string `json:"Subject"`
-	// Card ID
-	PlayerCardID string `json:"PlayerCardID"`
-	// Title ID
-	PlayerTitleID string `json:"PlayerTitleID"`
-	AccountLevel  int    `json:"AccountLevel"`
-	// Preferred Level Border ID
+	Subject                string `json:"Subject"`
+	PlayerCardID           string `json:"PlayerCardID"`
+	PlayerTitleID          string `json:"PlayerTitleID"`
+	AccountLevel           int    `json:"AccountLevel"`
 	PreferredLevelBorderID string `json:"PreferredLevelBorderID"`
 	Incognito              bool   `json:"Incognito"`
 	HideAccountLevel       bool   `json:"HideAccountLevel"`
 }
 
-// SeasonalBadgeInfo represents seasonal badge information
 type SeasonalBadgeInfo struct {
-	// Season ID
 	SeasonID        string      `json:"SeasonID"`
 	NumberOfWins    int         `json:"NumberOfWins"`
 	WinsByTier      interface{} `json:"WinsByTier"` // null
@@ -653,7 +619,6 @@ func (v *ValorantAPI) GetPreGameMatch() (*PreGameMatchResponse, error) {
 		"X-Riot-ClientVersion":    v.Version,
 		"Authorization":           "Bearer " + v.AccessToken,
 	}
-	// https://glz-{region}-1.{shard}.a.pvp.net/pregame/v1/matches/{pre-game match id}
 	url := fmt.Sprintf("https://glz-%s-1.%s.a.pvp.net/pregame/v1/matches/%s", v.Region, v.Shard, v.MatchID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

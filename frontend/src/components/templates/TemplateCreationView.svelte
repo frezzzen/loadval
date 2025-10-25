@@ -1,5 +1,6 @@
 <script lang="ts">
     import { useTemplateManager } from "../../managers/template-manager.svelte";
+    import { useModalManager } from "../../managers/modal-manager.svelte";
     import type { main } from "../../../wailsjs/go/models";
     import type { Template } from "../../types/template.type";
     import LoadoutView from "../loadout/LoadoutView.svelte";
@@ -15,6 +16,7 @@
     let { loadout, onBack, editingTemplate = null }: Props = $props();
 
     let templateManager = useTemplateManager();
+    let modalManager = useModalManager();
 
     let template = $state<Template>(
         editingTemplate
@@ -28,8 +30,20 @@
     );
 
     let isEditing = $derived(editingTemplate !== null);
+    let isValidName = $derived(template.name.trim().length > 0);
 
-    function handleSaveTemplate() {
+    async function handleSaveTemplate() {
+        if (!isValidName) {
+            await modalManager.confirm({
+                title: "Missing Template Name",
+                message: "Please enter a template name before saving.",
+                confirmText: "OK",
+                cancelText: "",
+                type: "warning",
+            });
+            return;
+        }
+
         if (isEditing) {
             templateManager.updateTemplate(template.id, template);
         } else {
@@ -38,8 +52,16 @@
         onBack();
     }
 
-    function handleDelete() {
-        if (confirm(`Are you sure you want to delete "${template.name}"?`)) {
+    async function handleDelete() {
+        const confirmed = await modalManager.confirm({
+            title: "Delete Template",
+            message: `Are you sure you want to delete "${template.name}"? This action cannot be undone.`,
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            type: "danger",
+        });
+
+        if (confirmed) {
             templateManager.removeTemplate(template.id);
             onBack();
         }
@@ -61,7 +83,12 @@
                         <span>Delete</span>
                     </button>
                 {/if}
-                <button class="btn-primary" onclick={handleSaveTemplate}>
+                <button
+                    class="btn-primary"
+                    onclick={handleSaveTemplate}
+                    disabled={!isValidName}
+                    title={!isValidName ? "Please enter a template name" : ""}
+                >
                     <span>{isEditing ? "Save Changes" : "Save Template"}</span>
                 </button>
             </div>

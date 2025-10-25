@@ -3,6 +3,7 @@
     import LoadoutView from "../loadout/LoadoutView.svelte";
     import type { main } from "../../../wailsjs/go/models";
     import { useTemplateManager } from "../../managers/template-manager.svelte";
+    import { useModalManager } from "../../managers/modal-manager.svelte";
 
     type Props = {
         agent: Agent;
@@ -13,6 +14,7 @@
     let { agent, initialLoadout, onBack }: Props = $props();
 
     let templateManager = useTemplateManager();
+    let modalManager = useModalManager();
 
     let loadout = $state<main.PlayerLoadoutResponse>(initialLoadout);
 
@@ -21,8 +23,16 @@
         onBack();
     }
 
-    function handleClear() {
-        if (confirm(`Clear loadout for ${agent.displayName}?`)) {
+    async function handleClear() {
+        const confirmed = await modalManager.confirm({
+            title: "Clear Agent Loadout",
+            message: `Are you sure you want to clear the loadout for ${agent.displayName}? This action cannot be undone.`,
+            confirmText: "Clear",
+            cancelText: "Cancel",
+            type: "danger",
+        });
+
+        if (confirmed) {
             templateManager.removeAgentLoadout(agent.uuid);
             onBack();
         }

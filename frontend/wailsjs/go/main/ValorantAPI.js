@@ -14,6 +14,10 @@ export function GetPlayerLoadout() {
   return window['go']['main']['ValorantAPI']['GetPlayerLoadout']();
 }
 
+export function GetPlayerUUID() {
+  return window['go']['main']['ValorantAPI']['GetPlayerUUID']();
+}
+
 export function GetPreGameMatch() {
   return window['go']['main']['ValorantAPI']['GetPreGameMatch']();
 }

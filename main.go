@@ -22,22 +22,34 @@ var updateApi *UpdateAPI
 func main() {
 	println("Starting LOADVAL application...")
 
+	if err := InitLogger(); err != nil {
+		println("Warning: Failed to initialize logger:", err.Error())
+	}
+	defer CloseLogger()
+
+	LogInfo("=== LOADVAL Application Starting ===")
+	LogInfo("Initializing application components...")
+
 	appobj = app.NewApp()
 	valorantApi = NewValorantAPI()
 	storageApi = NewStorageAPI()
 	updateApi = NewUpdateAPI()
 
-	println("App objects created successfully")
+	LogInfo("App objects created successfully")
+	LogInfo("Log file location: " + GetLogFilePath())
 
 	err := wails.Run(&options.App{
-		Title:  "LOADVAL",
-		Width:  1920,
-		Height: 1080,
+		Title:     "LOADVAL",
+		Width:     1280,
+		Height:    800,
+		MinWidth:  800,
+		MinHeight: 600,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 0, G: 0, B: 0, A: 255},
 		OnStartup:        startup,
+		OnShutdown:       shutdown,
 		Frameless:        true,
 		Bind: []interface{}{
 			appobj,
@@ -48,12 +60,19 @@ func main() {
 	})
 
 	if err != nil {
+		LogError("Application error: " + err.Error())
 		println("Error:", err.Error())
 	} else {
-		println("Application started successfully")
+		LogInfo("Application closed successfully")
+		println("Application closed successfully")
 	}
 }
 
 func startup(ctx context.Context) {
 	app.Startup(appobj, ctx)
+	LogInfo("Application startup complete")
+}
+
+func shutdown(ctx context.Context) {
+	LogInfo("Application shutting down...")
 }

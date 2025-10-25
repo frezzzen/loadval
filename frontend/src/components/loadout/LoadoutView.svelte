@@ -114,12 +114,57 @@
             };
         }
     }
+
+    const orderByCategory = {
+        "EEquippableCategory::Heavy": {
+            Ares: 0,
+            Odin: 1,
+        },
+        "EEquippableCategory::Sniper": {
+            Marshal: 0,
+            Outlaw: 1,
+            Operator: 2,
+        },
+        "EEquippableCategory::Rifle": {
+            Bulldog: 0,
+            Guardian: 1,
+            Phantom: 2,
+            Vandal: 3,
+        },
+        "EEquippableCategory::SMG": {
+            Stinger: 0,
+            Spectre: 1,
+        },
+        "EEquippableCategory::Shotgun": {
+            Bucky: 0,
+            Judge: 1,
+        },
+        "EEquippableCategory::Sidearm": {
+            Classic: 0,
+            Shorty: 1,
+            Frenzy: 2,
+            Ghost: 3,
+            Sheriff: 4,
+        },
+        "EEquippableCategory::Melee": {
+            Melee: 0,
+        },
+    };
+
+    function getSortedGuns(category: string) {
+        return guns[category].sort((a, b) => {
+            console.log(a.weapon.displayName, b.weapon.displayName);
+            const aIndex = orderByCategory[category][a.weapon.displayName];
+            const bIndex = orderByCategory[category][b.weapon.displayName];
+            return aIndex - bIndex;
+        });
+    }
 </script>
 
 {#snippet categoryColumn(category: string)}
     <div class="container">
         <div class="row">
-            {#each guns[category] as customGun (customGun.id)}
+            {#each getSortedGuns(category) as customGun (customGun.id)}
                 {@const chroma = customGun.skin.chromas.find(
                     (c: Chroma) => c.uuid === customGun.loadoutWeapon.ChromaID,
                 )}

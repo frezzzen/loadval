@@ -8,6 +8,8 @@ export function GetOwnedItems(arg1:string):Promise<main.OwnedItemsResponse>;
 
 export function GetPlayerLoadout():Promise<main.PlayerLoadoutResponse>;
 
+export function GetPlayerUUID():Promise<string>;
+
 export function GetPreGameMatch():Promise<main.PreGameMatchResponse>;
 
 export function GetPreGamePlayer():Promise<main.PreGamePlayerResponse>;

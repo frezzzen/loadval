@@ -1,5 +1,6 @@
 <script lang="ts">
     import { useTemplateManager } from "../../managers/template-manager.svelte";
+    import { useModalManager } from "../../managers/modal-manager.svelte";
     import type { Template } from "../../types/template.type";
 
     type Props = {
@@ -10,10 +11,19 @@
     let { template, onEdit }: Props = $props();
 
     const templateManager = useTemplateManager();
+    const modalManager = useModalManager();
 
-    function handleDelete(e: Event) {
+    async function handleDelete(e: Event) {
         e.stopPropagation();
-        if (confirm(`Are you sure you want to delete "${template.name}"?`)) {
+        const confirmed = await modalManager.confirm({
+            title: "Delete Template",
+            message: `Are you sure you want to delete "${template.name}"? This action cannot be undone.`,
+            confirmText: "Delete",
+            cancelText: "Cancel",
+            type: "danger",
+        });
+
+        if (confirmed) {
             templateManager.removeTemplate(template.id);
         }
     }
@@ -50,6 +60,21 @@
             <h3 class="template-name">{template.name}</h3>
             {#if template.agent}
                 <span class="agent-badge">{template.agent}</span>
+            {/if}
+            {#if templateManager.activeTemplate === template.id}
+                <span class="active-indicator">
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="3"
+                    >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    ACTIVE
+                </span>
             {/if}
         </div>
 
@@ -101,30 +126,35 @@
 
 <style lang="scss">
     .template-item {
-        &.active {
-            background: linear-gradient(
-                135deg,
-                rgba(173, 64, 255, 0.15),
-                rgba(122, 40, 203, 0.1)
-            );
-            border-color: rgba(173, 64, 255, 0.6);
-            box-shadow: 0 8px 20px rgba(173, 64, 255, 0.3);
-            .action-buttons {
-                opacity: 1;
-            }
-        }
-
+        position: relative;
         background: linear-gradient(
             135deg,
             rgba(173, 64, 255, 0.08),
             rgba(122, 40, 203, 0.04)
         );
-        border: 1px solid rgba(173, 64, 255, 0.2);
+        border: 2px solid rgba(173, 64, 255, 0.2);
         border-radius: 12px;
         padding: 1.25rem;
         transition: all 0.3s ease;
         cursor: pointer;
         outline: none;
+
+        &.active {
+            background: linear-gradient(
+                135deg,
+                rgba(173, 64, 255, 0.25),
+                rgba(122, 40, 203, 0.15)
+            );
+            border: 2px solid rgba(173, 64, 255, 0.9);
+            border-left: 5px solid #ad40ff;
+            box-shadow:
+                0 0 30px rgba(173, 64, 255, 0.5),
+                inset 0 0 20px rgba(173, 64, 255, 0.1);
+
+            .action-buttons {
+                opacity: 1;
+            }
+        }
 
         &:hover,
         &:focus {
@@ -177,6 +207,44 @@
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                     white-space: nowrap;
+                }
+
+                .active-indicator {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.35rem;
+                    padding: 0.35rem 0.85rem;
+                    background: linear-gradient(135deg, #ad40ff, #8a2be2);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 6px;
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    color: #fff;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                    white-space: nowrap;
+                    box-shadow:
+                        0 2px 8px rgba(173, 64, 255, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                    animation: pulse 2s ease-in-out infinite;
+
+                    svg {
+                        flex-shrink: 0;
+                    }
+                }
+            }
+
+            @keyframes pulse {
+                0%,
+                100% {
+                    box-shadow:
+                        0 2px 8px rgba(173, 64, 255, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                }
+                50% {
+                    box-shadow:
+                        0 2px 12px rgba(173, 64, 255, 0.6),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
                 }
             }
 

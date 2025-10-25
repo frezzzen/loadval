@@ -17,6 +17,11 @@
     "copyright": "Copyright © 2024 frezzzen",
     "comments": "LOADVAL - Valorant Loadout Manager"
   },
+  "windowStartState": "Normal",
+  "minWidth": 800,
+  "minHeight": 600,
+  "width": 1280,
+  "height": 800,
   "nsis": {
     "languages": [
       "English"

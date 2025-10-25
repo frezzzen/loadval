@@ -1,11 +1,22 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { QuitApp, MaximiseApp, MinimiseApp } from "../wailsjs/go/app/App";
+	import { onMount, onDestroy } from "svelte";
+	import {
+		QuitApp,
+		MaximiseApp,
+		MinimiseApp,
+		ReloadApp,
+		LogInfo,
+		LogError,
+	} from "../wailsjs/go/app/App";
 	import { GetMainData } from "../wailsjs/go/main/ValorantAPI";
 	import type { main } from "../wailsjs/go/models";
 	import AppContainer from "./components/AppContainer.svelte";
 	import LoaderContainer from "./components/LoaderContainer.svelte";
 	import UpdateNotification from "./components/UpdateNotification.svelte";
+	import ConfirmModal from "./components/core/ConfirmModal.svelte";
+	import { useModalManager } from "./managers/modal-manager.svelte";
+
+	const modalManager = useModalManager();
 
 	function QuitButton() {
 		QuitApp();
@@ -19,6 +30,11 @@
 		MinimiseApp();
 	}
 
+	function ReloadButton() {
+		LogInfo("Reloading application...");
+		ReloadApp();
+	}
+
 	let loadout = $state<main.PlayerLoadoutResponse | null>(null);
 	let ownedSkins = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
 	let ownedSkinVariants = $state<main.OwnedItemsResponseEntitlement[] | null>(
@@ -26,17 +42,40 @@
 	);
 	let ownedAgents = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
 	let ownedCards = $state<main.OwnedItemsResponseEntitlement[] | null>(null);
+	let windowSize = $state({
+		width: window.innerWidth,
+		height: window.innerHeight,
+	});
+
+	function handleResize() {
+		windowSize = { width: window.innerWidth, height: window.innerHeight };
+	}
 
 	onMount(() => {
+		LogInfo("Frontend application mounted");
+
+		window.addEventListener("resize", handleResize);
+
 		(async () => {
-			const mainData = await GetMainData();
-			loadout = mainData.PlayerLoadout || null;
-			ownedSkins = mainData.OwnedSkins[0].Entitlements || [];
-			ownedSkinVariants =
-				mainData.OwnedSkinVariants[0].Entitlements || [];
-			ownedAgents = mainData.OwnedAgents[0].Entitlements || [];
-			ownedCards = mainData.OwnedCards[0].Entitlements || [];
+			try {
+				LogInfo("Fetching main data from Valorant API...");
+				const mainData = await GetMainData();
+				loadout = mainData.PlayerLoadout || null;
+				ownedSkins = mainData.OwnedSkins[0].Entitlements || [];
+				ownedSkinVariants =
+					mainData.OwnedSkinVariants[0].Entitlements || [];
+				ownedAgents = mainData.OwnedAgents[0].Entitlements || [];
+				ownedCards = mainData.OwnedCards[0].Entitlements || [];
+				LogInfo("Main data loaded successfully");
+			} catch (error) {
+				LogError("Failed to load main data: " + error);
+				console.error("Failed to load main data:", error);
+			}
 		})();
+	});
+
+	onDestroy(() => {
+		window.removeEventListener("resize", handleResize);
 	});
 </script>
 
@@ -46,13 +85,16 @@
 	<drag role="button" tabindex="0" style="--wails-draggable:drag">
 		<div class="app-title">LOADVAL</div>
 		<div class="drag-spacer"></div>
-		<button onclick={MaximiseButton}>
+		<button onclick={ReloadButton} title="Reload App">
+			<span class="material-icons">refresh</span>
+		</button>
+		<button onclick={MaximiseButton} title="Maximize">
 			<span class="material-icons">fullscreen</span>
 		</button>
-		<button onclick={MinimiseButton}>
+		<button onclick={MinimiseButton} title="Minimize">
 			<span class="material-icons">minimize</span>
 		</button>
-		<button onclick={QuitButton}>
+		<button onclick={QuitButton} title="Close">
 			<span class="material-icons"> close </span>
 		</button>
 	</drag>
@@ -71,6 +113,17 @@
 		</div>
 	{/if}
 </main>
+
+<ConfirmModal
+	bind:isOpen={modalManager.isOpen}
+	title={modalManager.config.title}
+	message={modalManager.config.message}
+	confirmText={modalManager.config.confirmText}
+	cancelText={modalManager.config.cancelText}
+	type={modalManager.config.type}
+	onConfirm={() => modalManager.handleConfirm()}
+	onCancel={() => modalManager.handleCancel()}
+/>
 
 <style lang="scss">
 	main {
@@ -170,21 +223,28 @@
 				box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 			}
 
-			&:nth-child(1) {
+			&:nth-child(3) {
+				&:hover {
+					background: rgba(139, 92, 246, 0.2);
+					color: #8b5cf6;
+				}
+			}
+
+			&:nth-child(4) {
 				&:hover {
 					background: rgba(34, 197, 94, 0.2);
 					color: #22c55e;
 				}
 			}
 
-			&:nth-child(2) {
+			&:nth-child(5) {
 				&:hover {
 					background: rgba(251, 191, 36, 0.2);
 					color: #fbbf24;
 				}
 			}
 
-			&:nth-child(3) {
+			&:nth-child(6) {
 				&:hover {
 					background: rgba(239, 68, 68, 0.2);
 					color: #ef4444;
@@ -202,10 +262,32 @@
 		}
 	}
 
-	@media (max-width: 768px) {
+	@media (max-width: 1200px) {
+		drag {
+			padding: 0.9rem;
+
+			.app-title {
+				font-size: 1.3rem;
+			}
+
+			button {
+				width: 3rem;
+				height: 3rem;
+
+				.material-icons {
+					font-size: 1.7rem;
+				}
+			}
+		}
+	}
+
+	@media (max-width: 1000px) {
 		drag {
 			padding: 0.8rem;
-			gap: 0.4rem;
+
+			.app-title {
+				font-size: 1.2rem;
+			}
 
 			button {
 				width: 2.8rem;
@@ -218,19 +300,27 @@
 		}
 	}
 
-	@media (max-width: 480px) {
+	@media (max-width: 800px) {
 		drag {
-			padding: 0.6rem;
-			gap: 0.3rem;
+			padding: 0.7rem;
+			gap: 0.4rem;
+
+			.app-title {
+				font-size: 1.1rem;
+			}
 
 			button {
-				width: 2.4rem;
-				height: 2.4rem;
+				width: 2.6rem;
+				height: 2.6rem;
 
 				.material-icons {
-					font-size: 1.4rem;
+					font-size: 1.5rem;
 				}
 			}
+		}
+
+		main {
+			margin-top: 3.5rem;
 		}
 	}
 </style>

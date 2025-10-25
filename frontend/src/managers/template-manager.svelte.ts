@@ -1,4 +1,4 @@
-import { SetPlayerLoadout } from "../../wailsjs/go/main/ValorantAPI"
+import { SetPlayerLoadout, GetPlayerUUID } from "../../wailsjs/go/main/ValorantAPI"
 import {
     LoadTemplates,
     SaveTemplates,
@@ -15,25 +15,42 @@ export class TemplateManager {
     agentLoadouts = $state<Map<string, main.PlayerLoadoutResponse>>(new Map())
     isAgentLoadoutsEnabled = $state<boolean>(false)
     activeTemplate = $state<string | null>(null)
+    userID = $state<string>("")
 
     constructor() {
-        this.loadData()
+        this.init()
+    }
+
+    async init() {
+        try {
+            this.userID = await GetPlayerUUID()
+            if (this.userID) {
+                await this.loadData()
+            }
+        } catch (error) {
+            console.error("Failed to get user ID:", error)
+        }
     }
 
     async loadData() {
+        if (!this.userID) {
+            console.error("Cannot load data: user ID not set")
+            return
+        }
+
         try {
-            const templatesData = await LoadTemplates()
+            const templatesData = await LoadTemplates(this.userID)
             if (templatesData && templatesData !== "{}") {
                 this.templates = JSON.parse(templatesData)
             }
 
-            const agentLoadoutsData = await LoadAgentLoadouts()
+            const agentLoadoutsData = await LoadAgentLoadouts(this.userID)
             if (agentLoadoutsData && agentLoadoutsData !== "{}") {
                 const parsed = JSON.parse(agentLoadoutsData)
                 this.agentLoadouts = new Map(Object.entries(parsed))
             }
 
-            const settingsData = await LoadSettings()
+            const settingsData = await LoadSettings(this.userID)
             if (settingsData && settingsData !== "{}") {
                 const settings = JSON.parse(settingsData)
                 this.isAgentLoadoutsEnabled = settings.isAgentLoadoutsEnabled || false
@@ -45,18 +62,16 @@ export class TemplateManager {
         }
     }
 
-    migrateFromLocalStorage() {
+    async migrateFromLocalStorage() {
         const templates = localStorage.getItem("templates")
         if (templates) {
             this.templates = JSON.parse(templates)
-            this.saveTemplates()
         }
 
         const agentLoadouts = localStorage.getItem("agentLoadouts")
         if (agentLoadouts) {
             const parsed = JSON.parse(agentLoadouts)
             this.agentLoadouts = new Map(Object.entries(parsed))
-            this.saveAgentLoadouts()
         }
 
         const isEnabled = localStorage.getItem("isAgentLoadoutsEnabled")
@@ -69,7 +84,11 @@ export class TemplateManager {
             this.activeTemplate = activeTemplate
         }
 
-        this.saveSettings()
+        await Promise.all([
+            this.saveTemplates(),
+            this.saveAgentLoadouts(),
+            this.saveSettings()
+        ])
 
         localStorage.removeItem("templates")
         localStorage.removeItem("agentLoadouts")
@@ -78,29 +97,41 @@ export class TemplateManager {
     }
 
     async saveTemplates() {
+        if (!this.userID) {
+            console.error("Cannot save: user ID not set")
+            return
+        }
         try {
-            await SaveTemplates(JSON.stringify(this.templates))
+            await SaveTemplates(this.userID, JSON.stringify(this.templates))
         } catch (error) {
             console.error("Failed to save templates:", error)
         }
     }
 
     async saveAgentLoadouts() {
+        if (!this.userID) {
+            console.error("Cannot save: user ID not set")
+            return
+        }
         try {
             const obj = Object.fromEntries(this.agentLoadouts)
-            await SaveAgentLoadouts(JSON.stringify(obj))
+            await SaveAgentLoadouts(this.userID, JSON.stringify(obj))
         } catch (error) {
             console.error("Failed to save agent loadouts:", error)
         }
     }
 
     async saveSettings() {
+        if (!this.userID) {
+            console.error("Cannot save: user ID not set")
+            return
+        }
         try {
             const settings = {
                 isAgentLoadoutsEnabled: this.isAgentLoadoutsEnabled,
                 activeTemplate: this.activeTemplate
             }
-            await SaveSettings(JSON.stringify(settings))
+            await SaveSettings(this.userID, JSON.stringify(settings))
         } catch (error) {
             console.error("Failed to save settings:", error)
         }
@@ -121,6 +152,10 @@ export class TemplateManager {
     }
 
     addTemplate(template: Template) {
+        if (!template.name || template.name.trim().length === 0) {
+            console.error("Cannot add template without a name")
+            return null
+        }
         this.templates.push(template)
         this.saveTemplates()
         return template
@@ -136,6 +171,10 @@ export class TemplateManager {
     }
 
     updateTemplate(id: string, template: Template) {
+        if (!template.name || template.name.trim().length === 0) {
+            console.error("Cannot update template without a name")
+            return
+        }
         this.templates = this.templates.map((t) => t.id === id ? template : t)
         this.saveTemplates()
     }
